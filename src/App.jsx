@@ -131,7 +131,8 @@ export default function App() {
       });
 
       setMessage({ type: 'success', text: 'アップロードが完了しました！' });
-      setView('ranking');
+      // ★ アップロード成功後、フォームはリセットされるがビューは 'upload' のままにする
+      // setView('ranking'); // この行をコメントアウトまたは削除
     } catch (error) {
       console.error("Upload Error: ", error);
       setMessage({ type: 'error', text: `アップロードに失敗しました: ${error.message}` });
@@ -244,7 +245,14 @@ export default function App() {
       <Header setView={setView} />
       
       <main className="max-w-4xl mx-auto p-4 md:p-6">
-        {view === 'upload' && <UploadForm onUpload={handleUpload} />}
+        {/* --- UploadForm に mangaList と onDelete を渡す (変更なし) --- */}
+        {view === 'upload' && (
+          <UploadForm 
+            onUpload={handleUpload} 
+            mangaList={mangaList} 
+            onDelete={handleDelete} 
+          />
+        )}
         {view === 'vote' && <VoteView mangaList={mangaList} onVote={handleVote} />}
         {view === 'ranking' && <RankingView mangaList={mangaList} onDelete={handleDelete} />}
       </main>
@@ -289,15 +297,17 @@ function NavButton({ icon: Icon, label, onClick }) {
   );
 }
 
-// --- アップロードフォーム (変更なし) ---
-// (省略)...
-function UploadForm({ onUpload }) {
+// --- UploadForm の修正 (フォームリセットロジックは変更なし) ---
+function UploadForm({ onUpload, mangaList, onDelete }) { // プロップスを追加
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [password, setPassword] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState('');
+
+  // 削除モーダル用のステート (RankingViewからコピー)
+  const [showDeleteModal, setShowDeleteModal] = useState(null); 
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -323,7 +333,7 @@ function UploadForm({ onUpload }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => { // async に変更
     e.preventDefault();
     setError('');
     if (!title || !author || !password || !imageFile) {
@@ -334,13 +344,31 @@ function UploadForm({ onUpload }) {
       setError('パスワードは4桁の数字で入力してください。');
       return;
     }
-    onUpload({ title, author, password, imageFile });
+    
+    // onUpload を呼び出し、完了を待つ
+    await onUpload({ title, author, password, imageFile });
+    
+    // アップロード成功後、フォームをリセット
+    setTitle('');
+    setAuthor('');
+    setPassword('');
+    setImageFile(null);
+    setPreview(null);
+    setError('');
+    
+    // ファイル選択 input もリセット (DOM操作)
+    const fileInput = document.getElementById('imageFile');
+    if (fileInput) {
+      fileInput.value = '';
+    }
   };
 
   return (
     <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold mb-6 text-center">漫画をアップロード</h2>
       {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">{error}</div>}
+      
+      {/* --- 既存のフォーム (変更なし) --- */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* プレビュー */}
         <div className="w-full flex justify-center">
@@ -363,7 +391,7 @@ function UploadForm({ onUpload }) {
             type="file"
             accept="image/png, image/jpeg, image/gif"
             onChange={handleImageChange}
-            required
+            // required は handleSubmit でチェックするため削除（リセット後にエラー表示させないため）
             className="w-full text-sm text-gray-500
                        file:mr-4 file:py-2 file:px-4
                        file:rounded-full file:border-0
@@ -423,12 +451,71 @@ function UploadForm({ onUpload }) {
           アップロード
         </button>
       </form>
+      
+      {/* --- ★ ここからアップロード済みリスト (修正箇所) --- */}
+      <div className="mt-12 border-t pt-8">
+        <h3 className="text-xl font-bold mb-4 text-center">アップロード済み作品リスト</h3>
+        <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+          {mangaList.length === 0 ? (
+            <p className="text-center text-gray-500 py-4">まだ作品がありません。</p>
+          ) : (
+            // RankingViewのリスト表示ロジックを流用 (mangaListはcreatedAt降順でソート済み)
+            mangaList.map((manga) => ( 
+              <div
+                key={manga.id}
+                className="flex items-center bg-gray-50 p-3 rounded-lg shadow-sm border border-gray-200"
+              >
+                
+                {/* 1. ペンネーム (flex-1で幅を確保, min-w-0とtruncateで省略) */}
+                <div className="flex-1 min-w-0 pr-3">
+                  <p className="text-sm text-gray-600 truncate" title={manga.author}>
+                    作者: {manga.author}
+                  </p>
+                </div>
+                
+                {/* 2. 題名 (flex-1で幅を確保, min-w-0とtruncateで省略) */}
+                <div className="flex-1 min-w-0 pr-3">
+                  <h4 className="text-md font-bold text-blue-700 truncate" title={manga.title}>
+                    {manga.title}
+                  </h4>
+                </div>
+
+                {/* 3. 1/8縮小画像 (flex-shrink-0で固定サイズ) */}
+                <img 
+                  src={manga.imageUrl} 
+                  alt={manga.title} 
+                  className="w-10 h-16 object-cover rounded-md flex-shrink-0" // ★ サイズ変更
+                />
+                
+                {/* 4. 削除ボタン (flex-shrink-0で固定サイズ) */}
+                <button
+                  onClick={() => setShowDeleteModal(manga.id)}
+                  className="ml-4 p-2 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors flex-shrink-0"
+                  title="削除"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+      
+      {/* ★ 削除モーダル (変更なし) */}
+      {showDeleteModal && (
+        <DeleteModal
+          mangaId={showDeleteModal}
+          onClose={() => setShowDeleteModal(null)}
+          onDelete={onDelete} // Appコンポーネントから渡されたonDelete
+        />
+      )}
+      
     </div>
   );
 }
 
 
-// --- 投票ビュー (修正) ---
+// --- 投票ビュー (変更なし) ---
 function VoteView({ mangaList, onVote }) {
   const [match, setMatch] = useState(null); // { a: manga, b: manga }
 
@@ -544,7 +631,6 @@ function VoteCandidate({ manga, onSelect }) {
 
 
 // --- ランキングビュー (変更なし) ---
-// (省略)...
 function RankingView({ mangaList, onDelete }) {
   const [showDeleteModal, setShowDeleteModal] = useState(null); // null or mangaId
 
@@ -630,7 +716,6 @@ function RankingView({ mangaList, onDelete }) {
 
 
 // --- 削除モーダル (変更なし) ---
-// (省略)...
 function DeleteModal({ mangaId, onClose, onDelete }) {
   const [password, setPassword] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);

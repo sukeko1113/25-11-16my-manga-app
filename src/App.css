@@ -40,3 +40,83 @@
 .read-the-docs {
   color: #888;
 }
+
+/* === 1. アップロード済み作品リストの画像 === */
+
+.uploaded-image {
+  /*
+    現在の画像の幅が例えば 300px だと仮定した場合、
+    その0.3倍である 90px を max-width に設定します。
+    この数値は、現在のサイズに合わせて調整してください。
+  */
+  max-width: 90px; /* ← ここの値を「現在の幅 * 0.3」の値に調整 */
+  
+  width: 100%; /* 親要素の幅に追従 (max-widthを超えない) */
+  height: auto;  /* 縦横比を維持 */
+  display: block;  /* 余白などの制御をしやすくするため */
+}
+
+
+/* === 2. 削除モーダル関連 === */
+
+/* モーダルコンテナ全体 (画面固定) */
+.modal-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  
+  /* 中央揃え (Flexbox) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  z-index: 1000; /* 他の要素より手前に */
+}
+
+/* 背景オーバーレイ (半透明の黒) */
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6); /* 濃いめの半透明 */
+  z-index: 1001;
+}
+
+/* モーダル本体 (白いウィンドウ) */
+.modal-content {
+  position: relative; /* オーバーレイより手前に */
+  background-color: #ffffff;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 1002;
+  width: 90%;
+  max-width: 400px; /* モーダルの最大幅 */
+  text-align: center;
+}
+
+.modal-content p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-weight: bold;
+}
+
+/* パスワード入力欄 */
+#delete-password {
+  width: 120px;
+  padding: 8px;
+  font-size: 1.5rem; /* 見やすく */
+  text-align: center;
+  letter-spacing: 0.3em; /* 4桁入力が分かりやすいように */
+  margin-bottom: 20px;
+}
+
+/* ボタンの配置 */
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+}
