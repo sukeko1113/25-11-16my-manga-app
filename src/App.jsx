@@ -1,27 +1,28 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react'; // useCallback をインポート
-import { UploadCloud, Vote, Trophy, Trash2, X, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback } from "react"; // useCallback をインポート
+import { UploadCloud, Vote, Trophy, Trash2, X, Loader2 } from "lucide-react";
+import "./App.css"; // ← ★ この行があるか確認してください（なければ追加）
 
 // Firebase設定と関数をインポート
-import { db, storage, auth, appId } from './firebaseConfig.js';
-import { 
-  collection, 
-  onSnapshot, 
-  addDoc, 
-  doc, 
-  runTransaction, 
-  deleteDoc, 
+import { db, storage, auth, appId } from "./firebaseConfig.js";
+import {
+  collection,
+  onSnapshot,
+  addDoc,
+  doc,
+  runTransaction,
+  deleteDoc,
   getDoc,
   serverTimestamp,
   query,
-  orderBy // orderBy をインポート
+  orderBy, // orderBy をインポート
 } from "firebase/firestore";
-import { 
-  ref, 
-  uploadBytes, 
-  getDownloadURL, 
-  deleteObject 
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
 } from "firebase/storage";
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged } from "firebase/auth";
 
 // --- ELOレーティング計算ロジック (変更なし) ---
 const K_FACTOR = 32;
@@ -37,10 +38,9 @@ const updateElo = (oldRating, expected, score) => {
 const mangaCollectionPath = `artifacts/${appId}/public/data/manga`;
 const mangaCollectionRef = collection(db, mangaCollectionPath);
 
-
 // --- メインコンポーネント ---
 export default function App() {
-  const [view, setView] = useState('ranking');
+  const [view, setView] = useState("ranking");
   const [mangaList, setMangaList] = useState([]); // 初期値は空配列
   const [isLoading, setIsLoading] = useState(true); // 初回読み込み中はtrue
   const [message, setMessage] = useState(null);
@@ -68,22 +68,26 @@ export default function App() {
     }
 
     setIsLoading(true);
-    
+
     // createdAtで降順にソートするクエリ
     const q = query(mangaCollectionRef, orderBy("createdAt", "desc"));
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const list = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setMangaList(list);
-      setIsLoading(false);
-    }, (error) => {
-      console.error("Firestore Error: ", error);
-      setMessage({ type: 'error', text: 'データの読み込みに失敗しました。' });
-      setIsLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const list = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setMangaList(list);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error("Firestore Error: ", error);
+        setMessage({ type: "error", text: "データの読み込みに失敗しました。" });
+        setIsLoading(false);
+      }
+    );
 
     return () => unsubscribe(); // クリーンアップ
   }, [isAuthReady]); // isAuthReady が true になったら実行
@@ -100,7 +104,10 @@ export default function App() {
   const handleUpload = async (formData) => {
     setIsLoading(true);
     if (!userId) {
-      setMessage({ type: 'error', text: '認証エラー。再読み込みしてください。' });
+      setMessage({
+        type: "error",
+        text: "認証エラー。再読み込みしてください。",
+      });
       setIsLoading(false);
       return;
     }
@@ -108,14 +115,16 @@ export default function App() {
     try {
       // 1. 画像をStorageにアップロード
       // ファイル名を一意にする (appIdと時刻を追加)
-      const storagePath = `manga_images/${appId}/${Date.now()}_${formData.imageFile.name}`;
+      const storagePath = `manga_images/${appId}/${Date.now()}_${
+        formData.imageFile.name
+      }`;
       const imageRef = ref(storage, storagePath);
-      
+
       await uploadBytes(imageRef, formData.imageFile);
-      
+
       // 2. アップロードした画像のURLを取得
       const imageUrl = await getDownloadURL(imageRef);
-      
+
       // 3. Firestoreにメタデータを保存
       // 注意: パスワードを平文で保存しています。
       // 本番環境ではFirebase Functionsでハッシュ化することを強く推奨します。
@@ -127,15 +136,18 @@ export default function App() {
         storagePath: storagePath, // 削除用にパスを保存
         elo: 1500, // 初期レート
         createdAt: serverTimestamp(), // サーバー側のタイムスタンプ
-        uploaderUid: userId // アップロードしたユーザーのID (匿名)
+        uploaderUid: userId, // アップロードしたユーザーのID (匿名)
       });
 
-      setMessage({ type: 'success', text: 'アップロードが完了しました！' });
+      setMessage({ type: "success", text: "アップロードが完了しました！" });
       // ★ アップロード成功後、フォームはリセットされるがビューは 'upload' のままにする
       // setView('ranking'); // この行をコメントアウトまたは削除
     } catch (error) {
       console.error("Upload Error: ", error);
-      setMessage({ type: 'error', text: `アップロードに失敗しました: ${error.message}` });
+      setMessage({
+        type: "error",
+        text: `アップロードに失敗しました: ${error.message}`,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -144,7 +156,7 @@ export default function App() {
   // 投票処理 (Firebase トランザクション対応)
   const handleVote = async (winnerId, loserId) => {
     // 連続クリックを防ぐ（簡易的）
-    setIsLoading(true); 
+    setIsLoading(true);
 
     const winnerRef = doc(db, mangaCollectionPath, winnerId);
     const loserRef = doc(db, mangaCollectionPath, loserId);
@@ -171,10 +183,12 @@ export default function App() {
         transaction.update(loserRef, { elo: newLoserElo });
       });
       // 投票成功時はメッセージなしで次の対戦へ
-      
     } catch (error) {
       console.error("Vote Error: ", error);
-      setMessage({ type: 'error', text: `投票処理に失敗しました: ${error.message}` });
+      setMessage({
+        type: "error",
+        text: `投票処理に失敗しました: ${error.message}`,
+      });
     } finally {
       setIsLoading(false); // 次の対戦のためにローディング解除
     }
@@ -183,13 +197,13 @@ export default function App() {
   // 削除処理 (Firebase対応)
   const handleDelete = async (id, password) => {
     setIsLoading(true);
-    
+
     const mangaRef = doc(db, mangaCollectionPath, id);
 
     try {
       const mangaDoc = await getDoc(mangaRef);
       if (!mangaDoc.exists()) {
-        setMessage({ type: 'error', text: '削除対象の作品が見つかりません。' });
+        setMessage({ type: "error", text: "削除対象の作品が見つかりません。" });
         setIsLoading(false);
         return false;
       }
@@ -198,26 +212,27 @@ export default function App() {
 
       // パスワード照合 (平文)
       if (mangaData.password === password) {
-        
         // 1. Storageから画像を削除
         const imageRef = ref(storage, mangaData.storagePath);
         await deleteObject(imageRef);
-        
+
         // 2. Firestoreからドキュメントを削除
         await deleteDoc(mangaRef);
-        
-        setMessage({ type: 'success', text: '削除しました。' });
+
+        setMessage({ type: "success", text: "削除しました。" });
         setIsLoading(false);
         return true; // 削除モーダルを閉じるためにtrueを返す
-        
       } else {
-        setMessage({ type: 'error', text: 'パスワードが違います。' });
+        setMessage({ type: "error", text: "パスワードが違います。" });
         setIsLoading(false);
         return false;
       }
     } catch (error) {
       console.error("Delete Error: ", error);
-      setMessage({ type: 'error', text: `削除に失敗しました: ${error.message}` });
+      setMessage({
+        type: "error",
+        text: `削除に失敗しました: ${error.message}`,
+      });
       setIsLoading(false);
       return false;
     }
@@ -234,27 +249,37 @@ export default function App() {
 
       {/* グローバルメッセージ */}
       {message && (
-        <div className={`fixed top-4 right-4 p-4 rounded-lg shadow-md z-40 ${
-          message.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-        }`}>
+        <div
+          className={`fixed top-4 right-4 p-4 rounded-lg shadow-md z-40 ${
+            message.type === "success"
+              ? "bg-green-500 text-white"
+              : "bg-red-500 text-white"
+          }`}
+        >
           {message.text}
-          <button onClick={() => setMessage(null)} className="ml-2 font-bold">X</button>
+          <button onClick={() => setMessage(null)} className="ml-2 font-bold">
+            X
+          </button>
         </div>
       )}
 
       <Header setView={setView} />
-      
+
       <main className="max-w-4xl mx-auto p-4 md:p-6">
         {/* --- UploadForm に mangaList と onDelete を渡す (変更なし) --- */}
-        {view === 'upload' && (
-          <UploadForm 
-            onUpload={handleUpload} 
-            mangaList={mangaList} 
-            onDelete={handleDelete} 
+        {view === "upload" && (
+          <UploadForm
+            onUpload={handleUpload}
+            mangaList={mangaList}
+            onDelete={handleDelete}
           />
         )}
-        {view === 'vote' && <VoteView mangaList={mangaList} onVote={handleVote} />}
-        {view === 'ranking' && <RankingView mangaList={mangaList} onDelete={handleDelete} />}
+        {view === "vote" && (
+          <VoteView mangaList={mangaList} onVote={handleVote} />
+        )}
+        {view === "ranking" && (
+          <RankingView mangaList={mangaList} onDelete={handleDelete} />
+        )}
       </main>
 
       <footer className="text-center p-4 text-gray-500 text-sm">
@@ -269,16 +294,28 @@ function Header({ setView }) {
   return (
     <header className="bg-white shadow-md sticky top-0 z-30">
       <nav className="max-w-4xl mx-auto p-4 flex justify-between items-center">
-        <h1 
+        <h1
           className="text-2xl font-bold text-blue-600 cursor-pointer"
-          onClick={() => setView('ranking')}
+          onClick={() => setView("ranking")}
         >
           漫画投票アプリ
         </h1>
         <div className="flex space-x-2 md:space-x-4">
-          <NavButton icon={UploadCloud} label="アップロード" onClick={() => setView('upload')} />
-          <NavButton icon={Vote} label="投票する" onClick={() => setView('vote')} />
-          <NavButton icon={Trophy} label="ランキング" onClick={() => setView('ranking')} />
+          <NavButton
+            icon={UploadCloud}
+            label="アップロード"
+            onClick={() => setView("upload")}
+          />
+          <NavButton
+            icon={Vote}
+            label="投票する"
+            onClick={() => setView("vote")}
+          />
+          <NavButton
+            icon={Trophy}
+            label="ランキング"
+            onClick={() => setView("ranking")}
+          />
         </div>
       </nav>
     </header>
@@ -298,27 +335,28 @@ function NavButton({ icon: Icon, label, onClick }) {
 }
 
 // --- UploadForm の修正 (フォームリセットロジックは変更なし) ---
-function UploadForm({ onUpload, mangaList, onDelete }) { // プロップスを追加
-  const [title, setTitle] = useState('');
-  const [author, setAuthor] = useState('');
-  const [password, setPassword] = useState('');
+function UploadForm({ onUpload, mangaList, onDelete }) {
+  // プロップスを追加
+  const [title, setTitle] = useState("");
+  const [author, setAuthor] = useState("");
+  const [password, setPassword] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [preview, setPreview] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   // 削除モーダル用のステート (RankingViewからコピー)
-  const [showDeleteModal, setShowDeleteModal] = useState(null); 
+  const [showDeleteModal, setShowDeleteModal] = useState(null);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file && file.type.startsWith('image/')) {
+    if (file && file.type.startsWith("image/")) {
       setImageFile(file);
       setPreview(URL.createObjectURL(file));
-      setError('');
+      setError("");
     } else {
       setImageFile(null);
       setPreview(null);
-      setError('画像ファイルを選択してください。');
+      setError("画像ファイルを選択してください。");
     }
   };
 
@@ -328,62 +366,76 @@ function UploadForm({ onUpload, mangaList, onDelete }) { // プロップスを�
     if (/^\d{0,4}$/.test(val)) {
       setPassword(val);
       if (val.length === 4) {
-        setError('');
+        setError("");
       }
     }
   };
 
-  const handleSubmit = async (e) => { // async に変更
+  const handleSubmit = async (e) => {
+    // async に変更
     e.preventDefault();
-    setError('');
+    setError("");
     if (!title || !author || !password || !imageFile) {
-      setError('すべての項目を入力してください。');
+      setError("すべての項目を入力してください。");
       return;
     }
     if (password.length !== 4) {
-      setError('パスワードは4桁の数字で入力してください。');
+      setError("パスワードは4桁の数字で入力してください。");
       return;
     }
-    
+
     // onUpload を呼び出し、完了を待つ
     await onUpload({ title, author, password, imageFile });
-    
+
     // アップロード成功後、フォームをリセット
-    setTitle('');
-    setAuthor('');
-    setPassword('');
+    setTitle("");
+    setAuthor("");
+    setPassword("");
     setImageFile(null);
     setPreview(null);
-    setError('');
-    
+    setError("");
+
     // ファイル選択 input もリセット (DOM操作)
-    const fileInput = document.getElementById('imageFile');
+    const fileInput = document.getElementById("imageFile");
     if (fileInput) {
-      fileInput.value = '';
+      fileInput.value = "";
     }
   };
 
   return (
     <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold mb-6 text-center">漫画をアップロード</h2>
-      {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">{error}</div>}
-      
+      <h2 className="text-2xl font-bold mb-6 text-center">
+        漫画をアップロード
+      </h2>
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+          {error}
+        </div>
+      )}
+
       {/* --- 既存のフォーム (変更なし) --- */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* プレビュー */}
         <div className="w-full flex justify-center">
           {preview ? (
-            <img src={preview} alt="プレビュー" className="max-h-96 w-auto object-contain rounded-lg shadow-md border" />
+            <img
+              src={preview}
+              alt="プレビュー"
+              className="max-h-96 w-auto object-contain rounded-lg shadow-md border"
+            />
           ) : (
             <div className="w-64 h-96 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500">
               画像プレビュー
             </div>
           )}
         </div>
-        
+
         {/* ファイル選択 */}
         <div>
-          <label htmlFor="imageFile" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="imageFile"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             漫画ファイル (画像)
           </label>
           <input
@@ -403,7 +455,12 @@ function UploadForm({ onUpload, mangaList, onDelete }) { // プロップスを�
 
         {/* 題名 */}
         <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700">題名</label>
+          <label
+            htmlFor="title"
+            className="block text-sm font-medium text-gray-700"
+          >
+            題名
+          </label>
           <input
             id="title"
             type="text"
@@ -416,7 +473,12 @@ function UploadForm({ onUpload, mangaList, onDelete }) { // プロップスを�
 
         {/* ペンネーム */}
         <div>
-          <label htmlFor="author" className="block text-sm font-medium text-gray-700">ペンネーム</label>
+          <label
+            htmlFor="author"
+            className="block text-sm font-medium text-gray-700"
+          >
+            ペンネーム
+          </label>
           <input
             id="author"
             type="text"
@@ -429,7 +491,12 @@ function UploadForm({ onUpload, mangaList, onDelete }) { // プロップスを�
 
         {/* パスワード */}
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">削除用パスワード (4桁の数字)</label>
+          <label
+            htmlFor="password"
+            className="block text-sm font-medium text-gray-700"
+          >
+            削除用パスワード (4桁の数字)
+          </label>
           <input
             id="password"
             type="password" // マスクされるが、入力はtext
@@ -451,42 +518,51 @@ function UploadForm({ onUpload, mangaList, onDelete }) { // プロップスを�
           アップロード
         </button>
       </form>
-      
+
       {/* --- ★ ここからアップロード済みリスト (修正箇所) --- */}
       <div className="mt-12 border-t pt-8">
-        <h3 className="text-xl font-bold mb-4 text-center">アップロード済み作品リスト</h3>
+        <h3 className="text-xl font-bold mb-4 text-center">
+          アップロード済み作品リスト
+        </h3>
         <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
           {mangaList.length === 0 ? (
-            <p className="text-center text-gray-500 py-4">まだ作品がありません。</p>
+            <p className="text-center text-gray-500 py-4">
+              まだ作品がありません。
+            </p>
           ) : (
             // RankingViewのリスト表示ロジックを流用 (mangaListはcreatedAt降順でソート済み)
-            mangaList.map((manga) => ( 
+            mangaList.map((manga) => (
               <div
                 key={manga.id}
                 className="flex items-center bg-gray-50 p-3 rounded-lg shadow-sm border border-gray-200"
               >
-                
                 {/* 1. ペンネーム (flex-1で幅を確保, min-w-0とtruncateで省略) */}
                 <div className="flex-1 min-w-0 pr-3">
-                  <p className="text-sm text-gray-600 truncate" title={manga.author}>
+                  <p
+                    className="text-sm text-gray-600 truncate"
+                    title={manga.author}
+                  >
                     作者: {manga.author}
                   </p>
                 </div>
-                
+
                 {/* 2. 題名 (flex-1で幅を確保, min-w-0とtruncateで省略) */}
                 <div className="flex-1 min-w-0 pr-3">
-                  <h4 className="text-md font-bold text-blue-700 truncate" title={manga.title}>
+                  <h4
+                    className="text-md font-bold text-blue-700 truncate"
+                    title={manga.title}
+                  >
                     {manga.title}
                   </h4>
                 </div>
 
                 {/* 3. 1/8縮小画像 (flex-shrink-0で固定サイズ) */}
-                <img 
-                  src={manga.imageUrl} 
-                  alt={manga.title} 
+                <img
+                  src={manga.imageUrl}
+                  alt={manga.title}
                   className="w-10 h-16 object-cover rounded-md flex-shrink-0" // ★ サイズ変更
                 />
-                
+
                 {/* 4. 削除ボタン (flex-shrink-0で固定サイズ) */}
                 <button
                   onClick={() => setShowDeleteModal(manga.id)}
@@ -500,7 +576,7 @@ function UploadForm({ onUpload, mangaList, onDelete }) { // プロップスを�
           )}
         </div>
       </div>
-      
+
       {/* ★ 削除モーダル (変更なし) */}
       {showDeleteModal && (
         <DeleteModal
@@ -509,11 +585,9 @@ function UploadForm({ onUpload, mangaList, onDelete }) { // プロップスを�
           onDelete={onDelete} // Appコンポーネントから渡されたonDelete
         />
       )}
-      
     </div>
   );
 }
-
 
 // --- 投票ビュー (変更なし) ---
 function VoteView({ mangaList, onVote }) {
@@ -525,26 +599,25 @@ function VoteView({ mangaList, onVote }) {
       setMatch(null);
       return;
     }
-    
+
     // ELOレートが近い作品同士を対戦させるロジック (簡易版)
     const sortedList = [...mangaList].sort((a, b) => a.elo - b.elo);
-    
+
     let indexA, indexB;
-    
+
     // 50%の確率で、少し離れた作品とも対戦させる (多様性のため)
     if (Math.random() < 0.5) {
-       indexA = Math.floor(Math.random() * mangaList.length);
-       indexB = Math.floor(Math.random() * mangaList.length);
-       while (indexA === indexB) {
-         indexB = Math.floor(Math.random() * mangaList.length);
-       }
-       setMatch({ a: mangaList[indexA], b: mangaList[indexB] });
-       
+      indexA = Math.floor(Math.random() * mangaList.length);
+      indexB = Math.floor(Math.random() * mangaList.length);
+      while (indexA === indexB) {
+        indexB = Math.floor(Math.random() * mangaList.length);
+      }
+      setMatch({ a: mangaList[indexA], b: mangaList[indexB] });
     } else {
-        // ランダムな起点を選ぶ
-        indexA = Math.floor(Math.random() * (sortedList.length - 1));
-        indexB = indexA + 1; // 隣り合う作品を選ぶ
-        setMatch({ a: sortedList[indexA], b: sortedList[indexB] });
+      // ランダムな起点を選ぶ
+      indexA = Math.floor(Math.random() * (sortedList.length - 1));
+      indexB = indexA + 1; // 隣り合う作品を選ぶ
+      setMatch({ a: sortedList[indexA], b: sortedList[indexB] });
     }
   }, [mangaList]); // mangaListが変更されたら、この関数も再生成される
 
@@ -555,9 +628,8 @@ function VoteView({ mangaList, onVote }) {
     const timerId = setTimeout(() => {
       getNextMatch();
     }, 0);
-    
+
     return () => clearTimeout(timerId); // クリーンアップ
-    
   }, [getNextMatch]); // getNextMatch (mangaListに依存) が変更されたら実行
 
   const handleSelect = (winner, loser) => {
@@ -567,11 +639,14 @@ function VoteView({ mangaList, onVote }) {
     getNextMatch();
   };
 
-  if (!match || !match.a || !match.b) { // matchオブジェクトの存在も確認
+  if (!match || !match.a || !match.b) {
+    // matchオブジェクトの存在も確認
     return (
       <div className="text-center p-10 bg-white rounded-lg shadow-lg">
         <h2 className="text-xl font-semibold text-gray-600">
-          {mangaList.length < 2 ? "作品が2つ以上登録されると投票が開始されます。" : "対戦を準備中..."}
+          {mangaList.length < 2
+            ? "作品が2つ以上登録されると投票が開始されます。"
+            : "対戦を準備中..."}
         </h2>
       </div>
     );
@@ -582,15 +657,21 @@ function VoteView({ mangaList, onVote }) {
       <h2 className="text-2xl font-bold mb-6 text-center">どっちが面白い？</h2>
       <div className="flex flex-col md:flex-row justify-center items-stretch md:space-x-4">
         {/* 作品A */}
-        <VoteCandidate manga={match.a} onSelect={() => handleSelect(match.a, match.b)} />
-        
+        <VoteCandidate
+          manga={match.a}
+          onSelect={() => handleSelect(match.a, match.b)}
+        />
+
         {/* VS */}
         <div className="flex items-center justify-center text-3xl font-bold text-red-500 my-4 md:my-0">
           VS
         </div>
-        
+
         {/* 作品B */}
-        <VoteCandidate manga={match.b} onSelect={() => handleSelect(match.b, match.a)} />
+        <VoteCandidate
+          manga={match.b}
+          onSelect={() => handleSelect(match.b, match.a)}
+        />
       </div>
     </div>
   );
@@ -602,16 +683,16 @@ function VoteCandidate({ manga, onSelect }) {
   if (!manga) {
     return <div className="flex-1" />;
   }
-    
+
   return (
     <div className="flex-1 flex flex-col items-center">
-      <div 
+      <div
         className="w-full max-w-xs md:max-w-none md:w-auto md:h-[500px] flex justify-center items-center cursor-pointer group transition-transform duration-300 ease-out transform hover:scale-105"
         onClick={onSelect}
       >
-        <img 
-          src={manga.imageUrl} 
-          alt={manga.title} 
+        <img
+          src={manga.imageUrl}
+          alt={manga.title}
           className="object-contain w-full h-full max-h-[400px] md:max-h-full rounded-lg shadow-xl border-4 border-transparent group-hover:border-blue-500 group-hover:shadow-2xl transition-all"
         />
       </div>
@@ -629,7 +710,6 @@ function VoteCandidate({ manga, onSelect }) {
   );
 }
 
-
 // --- ランキングビュー (変更なし) ---
 function RankingView({ mangaList, onDelete }) {
   const [showDeleteModal, setShowDeleteModal] = useState(null); // null or mangaId
@@ -640,18 +720,18 @@ function RankingView({ mangaList, onDelete }) {
   }, [mangaList]);
 
   const getRankColor = (rank) => {
-    if (rank === 0) return 'bg-yellow-400 text-yellow-900';
-    if (rank === 1) return 'bg-gray-300 text-gray-800';
-    if (rank === 2) return 'bg-yellow-600 text-white';
-    return 'bg-gray-100 text-gray-700';
+    if (rank === 0) return "bg-yellow-400 text-yellow-900";
+    if (rank === 1) return "bg-gray-300 text-gray-800";
+    if (rank === 2) return "bg-yellow-600 text-white";
+    return "bg-gray-100 text-gray-700";
   };
-  
+
   const getRankEmoji = (rank) => {
-    if (rank === 0) return '🥇';
-    if (rank === 1) return '🥈';
-    if (rank === 2) return '🥉';
+    if (rank === 0) return "🥇";
+    if (rank === 1) return "🥈";
+    if (rank === 2) return "🥉";
     return `${rank + 1}`;
-  }
+  };
 
   return (
     <div className="bg-white p-4 md:p-8 rounded-lg shadow-lg">
@@ -661,7 +741,9 @@ function RankingView({ mangaList, onDelete }) {
       </h2>
       <div className="space-y-4">
         {sortedList.length === 0 ? (
-          <p className="text-center text-gray-500 py-4">まだ作品がありません。</p>
+          <p className="text-center text-gray-500 py-4">
+            まだ作品がありません。
+          </p>
         ) : (
           sortedList.map((manga, index) => (
             <div
@@ -669,26 +751,31 @@ function RankingView({ mangaList, onDelete }) {
               className="flex items-center bg-white p-4 rounded-lg shadow-md border border-gray-200"
             >
               {/* 順位 */}
-              <div className={`w-12 h-12 flex-shrink-0 mr-4 flex items-center justify-center rounded-full text-xl font-bold ${getRankColor(index)}`}>
+              <div
+                className={`w-24 h-24 flex-shrink-0 mr-4 flex items-center justify-center rounded-full text-xl font-bold ${getRankColor(
+                  index
+                )}`}
+              >
                 {getRankEmoji(index)}
               </div>
-              
-              {/* 画像 */}
-              <img 
-                src={manga.imageUrl} 
-                alt={manga.title} 
-                className="w-16 h-24 object-cover rounded-md flex-shrink-0" 
-              />
-              
               {/* 情報 */}
               <div className="flex-grow ml-4">
-                <h3 className="text-lg font-bold text-blue-700">{manga.title}</h3>
+                <h3 className="text-lg font-bold text-blue-700">
+                  {manga.title}
+                </h3>
                 <p className="text-sm text-gray-600">作者: {manga.author}</p>
                 <p className="text-lg font-semibold text-gray-800">
                   レート: {manga.elo}
                 </p>
               </div>
               
+              {/* 画像 */}
+              <img
+                src={manga.imageUrl}
+                alt={manga.title}
+                className="w-16 h-24 object-cover rounded-md flex-shrink-0"
+              />
+
               {/* 削除ボタン */}
               <button
                 onClick={() => setShowDeleteModal(manga.id)}
@@ -714,40 +801,39 @@ function RankingView({ mangaList, onDelete }) {
   );
 }
 
-
 // --- 削除モーダル (変更なし) ---
 function DeleteModal({ mangaId, onClose, onDelete }) {
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handlePasswordChange = (e) => {
     const val = e.target.value;
     if (/^\d{0,4}$/.test(val)) {
       setPassword(val);
-      setError('');
+      setError("");
     }
   };
 
   const handleDeleteClick = async () => {
     if (password.length !== 4) {
-      setError('4桁の数字を入力してください。');
+      setError("4桁の数字を入力してください。");
       return;
     }
-    
+
     setIsDeleting(true);
-    setError('');
-    
+    setError("");
+
     // onDeleteは成功したらtrueを返す (Firebase対応)
     const success = await onDelete(mangaId, password);
-    
+
     setIsDeleting(false);
     if (success) {
       onClose();
     } else {
       // エラーメッセージはAppコンポーネント側で表示されるか、
       // このモーダル内で即座に「パスワードが違います」と表示する
-      setError('パスワードが違うか、削除に失敗しました。');
+      setError("パスワードが違うか、削除に失敗しました。");
     }
   };
 
@@ -756,18 +842,28 @@ function DeleteModal({ mangaId, onClose, onDelete }) {
       <div className="bg-white rounded-lg shadow-xl p-6 md:p-8 w-full max-w-sm">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold">作品の削除</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
             <X className="w-6 h-6" />
           </button>
         </div>
         <p className="text-sm text-gray-600 mb-4">
           削除するには、アップロード時に設定した4桁のパスワードを入力してください。
         </p>
-        
-        {error && <div className="mb-4 p-2 bg-red-100 text-red-700 rounded-lg text-sm">{error}</div>}
-        
+
+        {error && (
+          <div className="mb-4 p-2 bg-red-100 text-red-700 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
         <div className="space-y-4">
-          <label htmlFor="delete-password" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="delete-password"
+            className="block text-sm font-medium text-gray-700"
+          >
             削除用パスワード (4桁)
           </label>
           <input
