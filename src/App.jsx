@@ -701,8 +701,8 @@ function RankingView({ mangaList, onDelete }) {
             >
               {/* 左側：順位画像 (超特大サイズ: w-64 h-64, text-9xl) */}
               <div 
-                className={`w-36 h-36 flex-shrink-0 mr-8 flex items-center justify-center rounded-full text-4xl font-bold ${getRankColor(index)}`}
-                style={{ fontSize: '8rem' }}
+                className={`w-32 h-32 flex-shrink-0 mr-8 flex items-center justify-center rounded-full text-7xl font-bold ${getRankColor(index)}`}
+                style={{ fontSize: '4rem' }}
               >
                 {getRankEmoji(index)}
               </div>
@@ -732,7 +732,7 @@ function RankingView({ mangaList, onDelete }) {
                 <img 
                   src={manga.imageUrl} 
                   alt={manga.title} 
-                  className="w-32 h-auto object-cover rounded-md mb-2 shadow-sm" 
+                  className="w-20 h-auto object-cover rounded-md mb-2 shadow-sm" 
                 />
                 
                 {/* 5. レート */}
