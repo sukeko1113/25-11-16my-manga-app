@@ -820,7 +820,7 @@ function RankingView({ mangaList, onDelete }) {
                 </p>
 
                 {/* 3. 削除ボタン (ペンネームの下、画像の上) */}
-                <div className="mt-2 mb-3">
+                {/* <div className="mt-2 mb-3">
                   <button
                     onClick={() => setShowDeleteModal(manga.id)}
                     className="flex items-center px-3 py-1 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors border border-red-200"
@@ -829,7 +829,7 @@ function RankingView({ mangaList, onDelete }) {
                     <Trash2 className="w-4 h-4 mr-1" />
                     削除
                   </button>
-                </div>
+                </div> */}
 
                 {/* 4. 画像 (サイズ可変) */}
                 <img
