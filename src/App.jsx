@@ -661,6 +661,7 @@ function VoteCandidate({ manga, onSelect }) {
 
 // --- ランキングビュー (変更なし) ---
 // RankingView コンポーネント全体をこれに置き換えてください
+// RankingView コンポーネント全体をこれに置き換えてください
 function RankingView({ mangaList, onDelete }) {
   const [showDeleteModal, setShowDeleteModal] = useState(null);
 
@@ -698,8 +699,8 @@ function RankingView({ mangaList, onDelete }) {
               key={manga.id}
               className="flex items-start bg-white p-4 rounded-lg shadow-md border border-gray-200"
             >
-              {/* 左側：順位画像 (サイズ2倍) */}
-              <div className={`w-24 h-24 flex-shrink-0 mr-6 flex items-center justify-center rounded-full text-4xl font-bold ${getRankColor(index)}`}>
+              {/* 左側：順位画像 (サイズ3倍: w-36 h-36, フォント特大: text-6xl) */}
+              <div className={`w-36 h-36 flex-shrink-0 mr-8 flex items-center justify-center rounded-full text-6xl font-bold ${getRankColor(index)}`}>
                 {getRankEmoji(index)}
               </div>
               
@@ -712,7 +713,7 @@ function RankingView({ mangaList, onDelete }) {
                 {/* 2. ペンネーム */}
                 <p className="text-sm text-gray-600 mt-1">作者: {manga.author}</p>
 
-                {/* 3. ★削除ボタン★ (ここにあれば確実に画像の上になります) */}
+                {/* 3. 削除ボタン (ペンネームの下、画像の上) */}
                 <div className="mt-2 mb-3">
                   <button
                     onClick={() => setShowDeleteModal(manga.id)}
