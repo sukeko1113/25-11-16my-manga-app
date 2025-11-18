@@ -699,8 +699,11 @@ function RankingView({ mangaList, onDelete }) {
               key={manga.id}
               className="flex items-start bg-white p-4 rounded-lg shadow-md border border-gray-200"
             >
-              {/* 左側：順位画像 (サイズ3倍: w-36 h-36, フォント特大: text-6xl) */}
-              <div className={`w-36 h-36 flex-shrink-0 mr-8 flex items-center justify-center rounded-full text-6xl font-bold ${getRankColor(index)}`}>
+              {/* 左側：順位画像 (超特大サイズ: w-64 h-64, text-9xl) */}
+              <div 
+                className={`w-36 h-36 flex-shrink-0 mr-8 flex items-center justify-center rounded-full text-4xl font-bold ${getRankColor(index)}`}
+                style={{ fontSize: '8rem' }}
+              >
                 {getRankEmoji(index)}
               </div>
               
