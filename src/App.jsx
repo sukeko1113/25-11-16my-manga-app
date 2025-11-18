@@ -663,6 +663,19 @@ function VoteCandidate({ manga, onSelect, imageSize }) {
 
   return (
     <div className="flex-1 flex flex-col items-center">
+      {/* 作品情報と選ぶボタン（画像の上） */}
+      <div className="text-center mb-4 p-2">
+        <h3 className="text-xl font-bold mb-1">{manga.title}</h3>
+        <p className="text-md text-gray-600 mb-3">by {manga.author}</p>
+        <button
+          onClick={onSelect}
+          className="py-2 px-6 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-white font-semibold rounded-full shadow-lg hover:from-yellow-500 hover:via-yellow-600 hover:to-yellow-700 transition-all transform active:scale-95"
+        >
+          選ぶ
+        </button>
+      </div>
+
+      {/* 画像 */}
       <div
         className="w-full flex justify-center items-center cursor-pointer group transition-transform duration-300 ease-out transform hover:scale-105"
         onClick={onSelect}
@@ -670,7 +683,7 @@ function VoteCandidate({ manga, onSelect, imageSize }) {
         <img
           src={manga.imageUrl}
           alt={manga.title}
-          className="object-contain rounded-lg shadow-xl border-4 border-transparent group-hover:border-blue-500 group-hover:shadow-2xl transition-all"
+          className="object-contain rounded-lg shadow-xl border-4 border-transparent group-hover:border-yellow-500 group-hover:shadow-2xl transition-all"
           style={{ 
             maxHeight: `${imageSize}px`,
             height: `${imageSize}px`,
@@ -678,16 +691,6 @@ function VoteCandidate({ manga, onSelect, imageSize }) {
           }}
         />
       </div>
-      <div className="text-center mt-4 p-2">
-        <h3 className="text-xl font-bold">{manga.title}</h3>
-        <p className="text-md text-gray-600">by {manga.author}</p>
-      </div>
-      <button
-        onClick={onSelect}
-        className="mt-2 py-2 px-6 bg-blue-600 text-white font-semibold rounded-full shadow-lg hover:bg-blue-700 transition-transform transform active:scale-95"
-      >
-        選ぶ
-      </button>
     </div>
   );
 }
