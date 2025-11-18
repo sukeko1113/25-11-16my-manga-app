@@ -696,6 +696,7 @@ function VoteCandidate({ manga, onSelect, imageSize }) {
 // RankingView コンポーネント全体をこれに置き換えてください
 function RankingView({ mangaList, onDelete }) {
   const [showDeleteModal, setShowDeleteModal] = useState(null);
+  const [imageSize, setImageSize] = useState(128); // 画像サイズの状態（デフォルト128px）
 
   // ELOレートでソート
   const sortedList = useMemo(() => {
@@ -703,57 +704,72 @@ function RankingView({ mangaList, onDelete }) {
   }, [mangaList]);
 
   const getRankColor = (rank) => {
-    if (rank === 0) return "bg-yellow-400 text-yellow-900";
-    if (rank === 1) return "bg-gray-300 text-gray-800";
-    if (rank === 2) return "bg-yellow-600 text-white";
-    return "bg-gray-100 text-gray-700";
+    if (rank === 0) return 'bg-yellow-400 text-yellow-900';
+    if (rank === 1) return 'bg-gray-300 text-gray-800';
+    if (rank === 2) return 'bg-yellow-600 text-white';
+    return 'bg-gray-100 text-gray-700';
   };
-
+  
   const getRankEmoji = (rank) => {
-    if (rank === 0) return "🥇";
-    if (rank === 1) return "🥈";
-    if (rank === 2) return "🥉";
+    if (rank === 0) return '🥇';
+    if (rank === 1) return '🥈';
+    if (rank === 2) return '🥉';
     return `${rank + 1}`;
-  };
+  }
 
   return (
     <div className="bg-white p-4 md:p-8 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold mb-6 text-center flex items-center justify-center">
+      <h2 className="text-2xl font-bold mb-4 text-center flex items-center justify-center">
         <Trophy className="w-8 h-8 mr-2 text-yellow-500" />
         リアルタイム ランキング
       </h2>
+      
+      {/* 画像サイズ調整スライダー */}
+      <div className="mb-6 max-w-md mx-auto">
+        <label htmlFor="ranking-image-size" className="block text-sm font-medium text-gray-700 mb-2 text-center">
+          画像サイズ: {imageSize}px
+        </label>
+        <input
+          id="ranking-image-size"
+          type="range"
+          min="50"
+          max="400"
+          step="10"
+          value={imageSize}
+          onChange={(e) => setImageSize(Number(e.target.value))}
+          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+        />
+        <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <span>小 (50px)</span>
+          <span>大 (400px)</span>
+        </div>
+      </div>
+
       <div className="space-y-6">
         {sortedList.length === 0 ? (
-          <p className="text-center text-gray-500 py-4">
-            まだ作品がありません。
-          </p>
+          <p className="text-center text-gray-500 py-4">まだ作品がありません。</p>
         ) : (
           sortedList.map((manga, index) => (
             <div
               key={manga.id}
               className="flex items-start bg-white p-4 rounded-lg shadow-md border border-gray-200"
             >
-              {/* 左側：順位画像 (超特大サイズ: w-64 h-64, text-9xl) */}
-              <div
-                className={`w-32 h-32 flex-shrink-0 mr-8 flex items-center justify-center rounded-full text-7xl font-bold ${getRankColor(
-                  index
-                )}`}
-                style={{ fontSize: "4rem" }}
+              {/* 左側：順位画像 (中サイズ: w-32 h-32, text-7xl) */}
+              <div 
+                className={`w-32 h-32 flex-shrink-0 mr-8 flex items-center justify-center rounded-full text-7xl font-bold ${getRankColor(index)}`}
+                style={{ fontSize: '4rem' }}
               >
                 {getRankEmoji(index)}
               </div>
-
+              
               {/* 右側：情報カラム (縦並び) */}
               <div className="flex-grow flex flex-col justify-center">
+                
                 {/* 1. 題名 */}
-                <h3 className="text-xl font-bold text-blue-700">
-                  {manga.title}
-                </h3>
-
+                <h3 className="text-xl font-bold text-blue-700">{manga.title}</h3>
+                
                 {/* 2. ペンネーム */}
-                <p className="text-sm text-gray-600 mt-1">
-                  作者: {manga.author}
-                </p>
+                <p className="text-sm text-gray-600 mt-1">作者: {manga.author}</p>
 
                 {/* 3. 削除ボタン (ペンネームの下、画像の上) */}
                 <div className="mt-2 mb-3">
@@ -767,13 +783,18 @@ function RankingView({ mangaList, onDelete }) {
                   </button>
                 </div>
 
-                {/* 4. 画像 */}
-                <img
-                  src={manga.imageUrl}
-                  alt={manga.title}
-                  className="w-20 h-auto object-cover rounded-md mb-2 shadow-sm"
+                {/* 4. 画像 (サイズ可変) */}
+                <img 
+                  src={manga.imageUrl} 
+                  alt={manga.title} 
+                  className="object-contain rounded-md mb-2 shadow-sm" 
+                  style={{ 
+                    maxHeight: `${imageSize}px`,
+                    height: `${imageSize}px`,
+                    width: 'auto'
+                  }}
                 />
-
+                
                 {/* 5. レート */}
                 <p className="text-lg font-semibold text-gray-800 mt-1">
                   レート: {manga.elo}
