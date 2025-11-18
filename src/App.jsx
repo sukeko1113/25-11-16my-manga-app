@@ -549,6 +549,7 @@ function UploadForm({ onUpload, mangaList, onDelete }) {
 // --- 投票ビュー (変更なし) ---
 function VoteView({ mangaList, onVote }) {
   const [match, setMatch] = useState(null); // { a: manga, b: manga }
+  const [imageSize, setImageSize] = useState(500); // 画像サイズの状態（デフォルト500px）
 
   // 2作品をランダムに選ぶ (useCallbackでメモ化)
   const getNextMatch = useCallback(() => {
@@ -576,28 +577,24 @@ function VoteView({ mangaList, onVote }) {
       indexB = indexA + 1; // 隣り合う作品を選ぶ
       setMatch({ a: sortedList[indexA], b: sortedList[indexB] });
     }
-  }, [mangaList]); // mangaListが変更されたら、この関数も再生成される
+  }, [mangaList]);
 
-  // マウント時とgetNextMatch変更時に次の対戦を取得 (修正)
+  // マウント時とgetNextMatch変更時に次の対戦を取得
   useEffect(() => {
-    // 警告を回避するため、非同期（マクロタスク）で実行
-    // これにより、Reactの現在のレンダリングサイクルの直後に実行される
     const timerId = setTimeout(() => {
       getNextMatch();
     }, 0);
 
-    return () => clearTimeout(timerId); // クリーンアップ
-  }, [getNextMatch]); // getNextMatch (mangaListに依存) が変更されたら実行
+    return () => clearTimeout(timerId);
+  }, [getNextMatch]);
 
   const handleSelect = (winner, loser) => {
-    if (!winner || !loser) return; // 安全装置
+    if (!winner || !loser) return;
     onVote(winner.id, loser.id);
-    // 投票後、次の対戦へ (mangaListの更新を待たずに即座に計算)
     getNextMatch();
   };
 
   if (!match || !match.a || !match.b) {
-    // matchオブジェクトの存在も確認
     return (
       <div className="text-center p-10 bg-white rounded-lg shadow-lg">
         <h2 className="text-xl font-semibold text-gray-600">
@@ -611,12 +608,35 @@ function VoteView({ mangaList, onVote }) {
 
   return (
     <div className="bg-white p-4 md:p-8 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold mb-6 text-center">どっちが面白い？</h2>
+      <h2 className="text-2xl font-bold mb-4 text-center">どっちが面白い？</h2>
+      
+      {/* 画像サイズ調整スライダー */}
+      <div className="mb-6 max-w-md mx-auto">
+        <label htmlFor="image-size" className="block text-sm font-medium text-gray-700 mb-2 text-center">
+          画像サイズ: {imageSize}px
+        </label>
+        <input
+          id="image-size"
+          type="range"
+          min="200"
+          max="1200"
+          step="50"
+          value={imageSize}
+          onChange={(e) => setImageSize(Number(e.target.value))}
+          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+        />
+        <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <span>小 (200px)</span>
+          <span>大 (1200px)</span>
+        </div>
+      </div>
+
       <div className="flex flex-col md:flex-row justify-center items-stretch md:space-x-4">
         {/* 作品A */}
         <VoteCandidate
           manga={match.a}
           onSelect={() => handleSelect(match.a, match.b)}
+          imageSize={imageSize}
         />
 
         {/* VS */}
@@ -628,6 +648,7 @@ function VoteView({ mangaList, onVote }) {
         <VoteCandidate
           manga={match.b}
           onSelect={() => handleSelect(match.b, match.a)}
+          imageSize={imageSize}
         />
       </div>
     </div>
@@ -635,8 +656,7 @@ function VoteView({ mangaList, onVote }) {
 }
 
 // 投票画面用の作品表示コンポーネント (変更なし)
-function VoteCandidate({ manga, onSelect }) {
-  // manga オブジェクトが存在しない場合のフォールバック
+function VoteCandidate({ manga, onSelect, imageSize }) {
   if (!manga) {
     return <div className="flex-1" />;
   }
@@ -644,14 +664,18 @@ function VoteCandidate({ manga, onSelect }) {
   return (
     <div className="flex-1 flex flex-col items-center">
       <div
-        className="w-full max-w-xs md:max-w-none md:w-auto md:h-[500px] flex justify-center items-center cursor-pointer group transition-transform duration-300 ease-out transform hover:scale-105"
+        className="w-full flex justify-center items-center cursor-pointer group transition-transform duration-300 ease-out transform hover:scale-105"
         onClick={onSelect}
       >
         <img
           src={manga.imageUrl}
           alt={manga.title}
-          className="h-auto object-cover rounded-md shadow-sm mx-auto"
-          style={{ maxWidth: "80px", width: "100%" }}
+          className="object-contain rounded-lg shadow-xl border-4 border-transparent group-hover:border-blue-500 group-hover:shadow-2xl transition-all"
+          style={{ 
+            maxHeight: `${imageSize}px`,
+            height: `${imageSize}px`,
+            width: 'auto'
+          }}
         />
       </div>
       <div className="text-center mt-4 p-2">
@@ -667,7 +691,6 @@ function VoteCandidate({ manga, onSelect }) {
     </div>
   );
 }
-
 // --- ランキングビュー (変更なし) ---
 // RankingView コンポーネント全体をこれに置き換えてください
 // RankingView コンポーネント全体をこれに置き換えてください
