@@ -642,7 +642,8 @@ function VoteCandidate({ manga, onSelect }) {
         <img
           src={manga.imageUrl}
           alt={manga.title}
-          className="object-contain w-full h-full max-h-[400px] md:max-h-full rounded-lg shadow-xl border-4 border-transparent group-hover:border-blue-500 group-hover:shadow-2xl transition-all"
+          className="h-auto object-cover rounded-md shadow-sm mx-auto"
+          style={{ maxWidth: '80px', width: '100%' }}
         />
       </div>
       <div className="text-center mt-4 p-2">
