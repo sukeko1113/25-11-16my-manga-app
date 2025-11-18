@@ -413,30 +413,18 @@ function UploadForm({ onUpload, mangaList, onDelete }) {
             <img
               src={preview}
               alt="プレビュー"
-              className="max-h-96 w-auto object-contain rounded-lg shadow-md border"
+              className="max-h-[768px] w-auto object-contain rounded-lg shadow-md border"
             />
           ) : (
             <div className="w-64 h-96 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500">
               画像プレビュー
             </div>
           )}
-        </div>
-
-        {/* ファイル選択 */}
-        <div>
-          <label
-            htmlFor="imageFile"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            漫画ファイル (画像)
-          </label>
-          <input
-            id="imageFile"
             type="file"
             accept="image/png, image/jpeg, image/gif"
             onChange={handleImageChange}
             className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-          />
+          /
         </div>
 
         {/* 題名 */}
