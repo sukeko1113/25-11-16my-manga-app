@@ -815,7 +815,7 @@ function RankingView({ mangaList, onDelete }) {
           id="ranking-image-size"
           type="range"
           min="50"
-          max="400"
+          max="800"
           step="10"
           value={imageSize}
           onChange={(e) => setImageSize(Number(e.target.value))}
@@ -823,7 +823,7 @@ function RankingView({ mangaList, onDelete }) {
         />
         <div className="flex justify-between text-xs text-gray-500 mt-1">
           <span>小 (50px)</span>
-          <span>大 (400px)</span>
+          <span>大 (800px)</span>
         </div>
       </div>
 
