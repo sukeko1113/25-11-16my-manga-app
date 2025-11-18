@@ -336,106 +336,85 @@ function NavButton({ icon: Icon, label, onClick }) {
 
 // --- UploadForm の修正 (フォームリセットロジックは変更なし) ---
 function UploadForm({ onUpload, mangaList, onDelete }) {
-  // プロップスを追加
-  const [title, setTitle] = useState("");
-  const [author, setAuthor] = useState("");
-  const [password, setPassword] = useState("");
+  const [title, setTitle] = useState('');
+  const [author, setAuthor] = useState('');
+  const [password, setPassword] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [preview, setPreview] = useState(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
-  // 削除モーダル用のステート (RankingViewからコピー)
-  const [showDeleteModal, setShowDeleteModal] = useState(null);
+  // 削除モーダル用のステート
+  const [showDeleteModal, setShowDeleteModal] = useState(null); 
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file && file.type.startsWith("image/")) {
+    if (file && file.type.startsWith('image/')) {
       setImageFile(file);
       setPreview(URL.createObjectURL(file));
-      setError("");
+      setError('');
     } else {
       setImageFile(null);
       setPreview(null);
-      setError("画像ファイルを選択してください。");
+      setError('画像ファイルを選択してください。');
     }
   };
 
   const handlePasswordChange = (e) => {
     const val = e.target.value;
-    // 4桁の数字のみ許可
     if (/^\d{0,4}$/.test(val)) {
       setPassword(val);
       if (val.length === 4) {
-        setError("");
+        setError('');
       }
     }
   };
 
   const handleSubmit = async (e) => {
-    // async に変更
     e.preventDefault();
-    setError("");
+    setError('');
     if (!title || !author || !password || !imageFile) {
-      setError("すべての項目を入力してください。");
+      setError('すべての項目を入力してください。');
       return;
     }
     if (password.length !== 4) {
-      setError("パスワードは4桁の数字で入力してください。");
+      setError('パスワードは4桁の数字で入力してください。');
       return;
     }
-
-    // onUpload を呼び出し、完了を待つ
+    
     await onUpload({ title, author, password, imageFile });
-
-    // アップロード成功後、フォームをリセット
-    setTitle("");
-    setAuthor("");
-    setPassword("");
+    
+    // リセット
+    setTitle('');
+    setAuthor('');
+    setPassword('');
     setImageFile(null);
     setPreview(null);
-    setError("");
-
-    // ファイル選択 input もリセット (DOM操作)
-    const fileInput = document.getElementById("imageFile");
-    if (fileInput) {
-      fileInput.value = "";
-    }
+    setError('');
+    const fileInput = document.getElementById('imageFile');
+    if (fileInput) fileInput.value = '';
   };
 
   return (
     <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold mb-6 text-center">
-        漫画をアップロード
-      </h2>
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      {/* --- 既存のフォーム (変更なし) --- */}
+      <h2 className="text-2xl font-bold mb-6 text-center">漫画をアップロード</h2>
+      {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">{error}</div>}
+      
+      {/* 入力フォーム */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* プレビュー */}
         <div className="w-full flex justify-center">
           {preview ? (
-            <img
-              src={preview}
-              alt="プレビュー"
-              className="max-h-96 w-auto object-contain rounded-lg shadow-md border"
-            />
+            <img src={preview} alt="プレビュー" className="max-h-96 w-auto object-contain rounded-lg shadow-md border" />
           ) : (
             <div className="w-64 h-96 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500">
               画像プレビュー
             </div>
           )}
         </div>
-
+        
         {/* ファイル選択 */}
         <div>
-          <label
-            htmlFor="imageFile"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
+          <label htmlFor="imageFile" className="block text-sm font-medium text-gray-700 mb-1">
             漫画ファイル (画像)
           </label>
           <input
@@ -443,24 +422,13 @@ function UploadForm({ onUpload, mangaList, onDelete }) {
             type="file"
             accept="image/png, image/jpeg, image/gif"
             onChange={handleImageChange}
-            // required は handleSubmit でチェックするため削除（リセット後にエラー表示させないため）
-            className="w-full text-sm text-gray-500
-                       file:mr-4 file:py-2 file:px-4
-                       file:rounded-full file:border-0
-                       file:text-sm file:font-semibold
-                       file:bg-blue-50 file:text-blue-700
-                       hover:file:bg-blue-100"
+            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
           />
         </div>
 
         {/* 題名 */}
         <div>
-          <label
-            htmlFor="title"
-            className="block text-sm font-medium text-gray-700"
-          >
-            題名
-          </label>
+          <label htmlFor="title" className="block text-sm font-medium text-gray-700">題名</label>
           <input
             id="title"
             type="text"
@@ -473,12 +441,7 @@ function UploadForm({ onUpload, mangaList, onDelete }) {
 
         {/* ペンネーム */}
         <div>
-          <label
-            htmlFor="author"
-            className="block text-sm font-medium text-gray-700"
-          >
-            ペンネーム
-          </label>
+          <label htmlFor="author" className="block text-sm font-medium text-gray-700">ペンネーム</label>
           <input
             id="author"
             type="text"
@@ -491,16 +454,11 @@ function UploadForm({ onUpload, mangaList, onDelete }) {
 
         {/* パスワード */}
         <div>
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-700"
-          >
-            削除用パスワード (4桁の数字)
-          </label>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700">削除用パスワード (4桁の数字)</label>
           <input
             id="password"
-            type="password" // マスクされるが、入力はtext
-            inputMode="numeric" // モバイルで数字キーパッド表示
+            type="password"
+            inputMode="numeric"
             pattern="\d{4}"
             maxLength="4"
             value={password}
@@ -518,73 +476,64 @@ function UploadForm({ onUpload, mangaList, onDelete }) {
           アップロード
         </button>
       </form>
-
-      {/* --- ★ ここからアップロード済みリスト (修正箇所) --- */}
+      
+      {/* --- アップロード済み作品リスト --- */}
       <div className="mt-12 border-t pt-8">
-        <h3 className="text-xl font-bold mb-4 text-center">
-          アップロード済み作品リスト
-        </h3>
-        <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+        <h3 className="text-xl font-bold mb-4 text-center">アップロード済み作品リスト</h3>
+        <div className="space-y-6 max-h-96 overflow-y-auto pr-2">
           {mangaList.length === 0 ? (
-            <p className="text-center text-gray-500 py-4">
-              まだ作品がありません。
-            </p>
+            <p className="text-center text-gray-500 py-4">まだ作品がありません。</p>
           ) : (
-            // RankingViewのリスト表示ロジックを流用 (mangaListはcreatedAt降順でソート済み)
-            mangaList.map((manga) => (
+            mangaList.map((manga) => ( 
               <div
                 key={manga.id}
-                className="flex items-center bg-gray-50 p-3 rounded-lg shadow-sm border border-gray-200"
+                className="flex flex-col items-center bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200"
               >
-                {/* 1. ペンネーム (flex-1で幅を確保, min-w-0とtruncateで省略) */}
-                <div className="flex-1 min-w-0 pr-3">
-                  <p
-                    className="text-sm text-gray-600 truncate"
-                    title={manga.author}
+                
+                {/* 1. 題名 */}
+                <h4 className="text-lg font-bold text-blue-700 mb-1 text-center">
+                  {manga.title}
+                </h4>
+
+                {/* 2. ペンネーム */}
+                <p className="text-sm text-gray-600 mb-3 text-center">
+                  作者: {manga.author}
+                </p>
+
+                {/* 3. 削除ボタン (ここがペンネームの下、画像の上) */}
+                <div className="mb-3">
+                  <button
+                    onClick={() => setShowDeleteModal(manga.id)}
+                    className="flex items-center px-3 py-1 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors border border-red-200"
+                    title="削除"
                   >
-                    作者: {manga.author}
-                  </p>
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    削除
+                  </button>
                 </div>
 
-                {/* 2. 題名 (flex-1で幅を確保, min-w-0とtruncateで省略) */}
-                <div className="flex-1 min-w-0 pr-3">
-                  <h4
-                    className="text-md font-bold text-blue-700 truncate"
-                    title={manga.title}
-                  >
-                    {manga.title}
-                  </h4>
-                </div>
-
-                {/* 3. 1/8縮小画像 (flex-shrink-0で固定サイズ) */}
-                <img
-                  src={manga.imageUrl}
-                  alt={manga.title}
-                  className="w-10 h-16 object-cover rounded-md flex-shrink-0" // ★ サイズ変更
+                {/* 4. 画像 */}
+                <img 
+                  src={manga.imageUrl} 
+                  alt={manga.title} 
+                  className="w-32 h-auto object-cover rounded-md shadow-sm" 
                 />
-
-                {/* 4. 削除ボタン (flex-shrink-0で固定サイズ) */}
-                <button
-                  onClick={() => setShowDeleteModal(manga.id)}
-                  className="ml-4 p-2 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors flex-shrink-0"
-                  title="削除"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
+                
               </div>
             ))
           )}
         </div>
       </div>
-
-      {/* ★ 削除モーダル (変更なし) */}
+      
+      {/* 削除モーダル */}
       {showDeleteModal && (
         <DeleteModal
           mangaId={showDeleteModal}
           onClose={() => setShowDeleteModal(null)}
-          onDelete={onDelete} // Appコンポーネントから渡されたonDelete
+          onDelete={onDelete}
         />
       )}
+      
     </div>
   );
 }
@@ -721,18 +670,18 @@ function RankingView({ mangaList, onDelete }) {
   }, [mangaList]);
 
   const getRankColor = (rank) => {
-    if (rank === 0) return "bg-yellow-400 text-yellow-900";
-    if (rank === 1) return "bg-gray-300 text-gray-800";
-    if (rank === 2) return "bg-yellow-600 text-white";
-    return "bg-gray-100 text-gray-700";
+    if (rank === 0) return 'bg-yellow-400 text-yellow-900';
+    if (rank === 1) return 'bg-gray-300 text-gray-800';
+    if (rank === 2) return 'bg-yellow-600 text-white';
+    return 'bg-gray-100 text-gray-700';
   };
-
+  
   const getRankEmoji = (rank) => {
-    if (rank === 0) return "🥇";
-    if (rank === 1) return "🥈";
-    if (rank === 2) return "🥉";
+    if (rank === 0) return '🥇';
+    if (rank === 1) return '🥈';
+    if (rank === 2) return '🥉';
     return `${rank + 1}`;
-  };
+  }
 
   return (
     <div className="bg-white p-4 md:p-8 rounded-lg shadow-lg">
@@ -742,9 +691,7 @@ function RankingView({ mangaList, onDelete }) {
       </h2>
       <div className="space-y-6">
         {sortedList.length === 0 ? (
-          <p className="text-center text-gray-500 py-4">
-            まだ作品がありません。
-          </p>
+          <p className="text-center text-gray-500 py-4">まだ作品がありません。</p>
         ) : (
           sortedList.map((manga, index) => (
             <div
@@ -752,25 +699,18 @@ function RankingView({ mangaList, onDelete }) {
               className="flex items-start bg-white p-4 rounded-lg shadow-md border border-gray-200"
             >
               {/* 左側：順位画像 (サイズ2倍) */}
-              <div
-                className={`w-24 h-24 flex-shrink-0 mr-6 flex items-center justify-center rounded-full text-4xl font-bold ${getRankColor(
-                  index
-                )}`}
-              >
+              <div className={`w-24 h-24 flex-shrink-0 mr-6 flex items-center justify-center rounded-full text-4xl font-bold ${getRankColor(index)}`}>
                 {getRankEmoji(index)}
               </div>
-
+              
               {/* 右側：情報カラム (縦並び) */}
               <div className="flex-grow flex flex-col justify-center">
+                
                 {/* 1. 題名 */}
-                <h3 className="text-xl font-bold text-blue-700">
-                  {manga.title}
-                </h3>
-
+                <h3 className="text-xl font-bold text-blue-700">{manga.title}</h3>
+                
                 {/* 2. ペンネーム */}
-                <p className="text-sm text-gray-600 mt-1">
-                  作者: {manga.author}
-                </p>
+                <p className="text-sm text-gray-600 mt-1">作者: {manga.author}</p>
 
                 {/* 3. ★削除ボタン★ (ここにあれば確実に画像の上になります) */}
                 <div className="mt-2 mb-3">
@@ -785,12 +725,12 @@ function RankingView({ mangaList, onDelete }) {
                 </div>
 
                 {/* 4. 画像 */}
-                <img
-                  src={manga.imageUrl}
-                  alt={manga.title}
-                  className="w-32 h-auto object-cover rounded-md mb-2 shadow-sm"
+                <img 
+                  src={manga.imageUrl} 
+                  alt={manga.title} 
+                  className="w-32 h-auto object-cover rounded-md mb-2 shadow-sm" 
                 />
-
+                
                 {/* 5. レート */}
                 <p className="text-lg font-semibold text-gray-800 mt-1">
                   レート: {manga.elo}
