@@ -769,13 +769,6 @@ function RankingView({ mangaList, onDelete }) {
                 </p>
               </div>
               
-              {/* 画像 */}
-              <img
-                src={manga.imageUrl}
-                alt={manga.title}
-                className="w-16 h-24 object-cover rounded-md flex-shrink-0"
-              />
-
               {/* 削除ボタン */}
               <button
                 onClick={() => setShowDeleteModal(manga.id)}
@@ -784,6 +777,16 @@ function RankingView({ mangaList, onDelete }) {
               >
                 <Trash2 className="w-5 h-5" />
               </button>
+
+              
+              {/* 画像 */}
+              <img
+                src={manga.imageUrl}
+                alt={manga.title}
+                className="w-16 h-24 object-cover rounded-md flex-shrink-0"
+              />
+
+
             </div>
           ))
         )}
