@@ -516,7 +516,7 @@ function UploadForm({ onUpload, mangaList, onDelete }) {
                 <img 
                   src={manga.imageUrl} 
                   alt={manga.title} 
-                  className="w-32 h-auto object-cover rounded-md shadow-sm" 
+                  className="uploaded-image w-20 h-auto object-cover rounded-md shadow-sm" 
                 />
                 
               </div>
