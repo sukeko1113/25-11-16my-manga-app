@@ -711,10 +711,11 @@ function VoteCandidate({ manga, onSelect }) {
 }
 
 // --- ランキングビュー (変更なし) ---
+// RankingView コンポーネント全体をこれに置き換えてください
 function RankingView({ mangaList, onDelete }) {
-  const [showDeleteModal, setShowDeleteModal] = useState(null); // null or mangaId
+  const [showDeleteModal, setShowDeleteModal] = useState(null);
 
-  // ELOレートでソート (mangaListがFirestoreから直接来るため、useMemoで正しくソート)
+  // ELOレートでソート
   const sortedList = useMemo(() => {
     return [...mangaList].sort((a, b) => b.elo - a.elo);
   }, [mangaList]);
@@ -739,7 +740,7 @@ function RankingView({ mangaList, onDelete }) {
         <Trophy className="w-8 h-8 mr-2 text-yellow-500" />
         リアルタイム ランキング
       </h2>
-      <div className="space-y-4">
+      <div className="space-y-6">
         {sortedList.length === 0 ? (
           <p className="text-center text-gray-500 py-4">
             まだ作品がありません。
@@ -748,45 +749,53 @@ function RankingView({ mangaList, onDelete }) {
           sortedList.map((manga, index) => (
             <div
               key={manga.id}
-              className="flex items-center bg-white p-4 rounded-lg shadow-md border border-gray-200"
+              className="flex items-start bg-white p-4 rounded-lg shadow-md border border-gray-200"
             >
-              {/* 順位 */}
+              {/* 左側：順位画像 (サイズ2倍) */}
               <div
-                className={`w-24 h-24 flex-shrink-0 mr-4 flex items-center justify-center rounded-full text-xl font-bold ${getRankColor(
+                className={`w-24 h-24 flex-shrink-0 mr-6 flex items-center justify-center rounded-full text-4xl font-bold ${getRankColor(
                   index
                 )}`}
               >
                 {getRankEmoji(index)}
               </div>
-              {/* 情報 */}
-              <div className="flex-grow ml-4">
-                <h3 className="text-lg font-bold text-blue-700">
+
+              {/* 右側：情報カラム (縦並び) */}
+              <div className="flex-grow flex flex-col justify-center">
+                {/* 1. 題名 */}
+                <h3 className="text-xl font-bold text-blue-700">
                   {manga.title}
                 </h3>
-                <p className="text-sm text-gray-600">作者: {manga.author}</p>
-                <p className="text-lg font-semibold text-gray-800">
+
+                {/* 2. ペンネーム */}
+                <p className="text-sm text-gray-600 mt-1">
+                  作者: {manga.author}
+                </p>
+
+                {/* 3. ★削除ボタン★ (ここにあれば確実に画像の上になります) */}
+                <div className="mt-2 mb-3">
+                  <button
+                    onClick={() => setShowDeleteModal(manga.id)}
+                    className="flex items-center px-3 py-1 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors border border-red-200"
+                    title="削除"
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    削除
+                  </button>
+                </div>
+
+                {/* 4. 画像 */}
+                <img
+                  src={manga.imageUrl}
+                  alt={manga.title}
+                  className="w-32 h-auto object-cover rounded-md mb-2 shadow-sm"
+                />
+
+                {/* 5. レート */}
+                <p className="text-lg font-semibold text-gray-800 mt-1">
                   レート: {manga.elo}
                 </p>
               </div>
-              
-              {/* 削除ボタン */}
-              <button
-                onClick={() => setShowDeleteModal(manga.id)}
-                className="ml-4 p-2 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-full transition-colors"
-                title="削除"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
-
-              
-              {/* 画像 */}
-              <img
-                src={manga.imageUrl}
-                alt={manga.title}
-                className="w-16 h-24 object-cover rounded-md flex-shrink-0"
-              />
-
-
             </div>
           ))
         )}
