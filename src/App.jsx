@@ -334,7 +334,86 @@ function NavButton({ icon: Icon, label, onClick }) {
   );
 }
 
-// --- UploadForm の修正 (フォームリセットロジックは変更なし) ---
+// --- UploadListItem: リストの各アイテム用コンポーネント (新規追加) ---
+function UploadListItem({ manga, onDelete }) {
+  const [password, setPassword] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = async () => {
+    if (password.length !== 4) {
+      // ここでアラートを出すか、親コンポーネント経由でメッセージを出すことも可能ですが
+      // 簡易的にブラウザのアラート、または何もしないでボタンを無効化しているのでそのまま
+      alert("4桁のパスワードを入力してください。");
+      return;
+    }
+    // 確認
+    if (!window.confirm("本当に削除しますか？")) {
+      return;
+    }
+
+    setIsDeleting(true);
+    // AppのhandleDeleteを呼ぶ (成功時true, 失敗時falseだがApp内でメッセージ設定済み)
+    await onDelete(manga.id, password);
+    setIsDeleting(false);
+  };
+
+  return (
+    <div
+      className="flex flex-col items-center bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200"
+    >
+      {/* 1. 題名 */}
+      <h4 className="text-lg font-bold text-blue-700 mb-1 text-center">
+        {manga.title}
+      </h4>
+
+      {/* 2. ペンネーム */}
+      <p className="text-sm text-gray-600 mb-3 text-center">
+        作者: {manga.author}
+      </p>
+
+      {/* 3. 削除エリア (常時表示) */}
+      <div className="mb-3 flex items-center justify-center space-x-2 bg-white p-2 rounded border border-gray-200">
+        <label htmlFor={`del-pass-${manga.id}`} className="text-xs text-gray-500 font-bold">
+          削除PW:
+        </label>
+        <input
+          id={`del-pass-${manga.id}`}
+          type="password"
+          maxLength="4"
+          placeholder="4桁"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-16 px-2 py-1 border border-gray-300 rounded text-center text-sm focus:ring-2 focus:ring-red-200 outline-none"
+        />
+        <button
+          onClick={handleDeleteClick}
+          disabled={isDeleting || password.length !== 4}
+          className="flex items-center px-3 py-1 text-sm text-white bg-red-500 hover:bg-red-600 rounded transition-colors shadow-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+          title="削除実行"
+        >
+          {isDeleting ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Trash2 className="w-4 h-4 mr-1" />
+          )}
+          実行
+        </button>
+      </div>
+
+      {/* 4. 画像 */}
+      <div className="flex justify-center w-full">
+        <img
+          src={manga.imageUrl}
+          alt={manga.title}
+          className="h-auto object-cover rounded-md shadow-sm"
+          style={{ maxWidth: "80px" }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// --- UploadForm の修正 (リスト部分を分離し、モーダルを削除) ---
 function UploadForm({ onUpload, mangaList, onDelete }) {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
@@ -343,8 +422,8 @@ function UploadForm({ onUpload, mangaList, onDelete }) {
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState("");
 
-  // 削除モーダル用のステート
-  const [showDeleteModal, setShowDeleteModal] = useState(null);
+  // 削除モーダル用のステートは不要になったので削除
+  // const [showDeleteModal, setShowDeleteModal] = useState(null);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -506,7 +585,7 @@ function UploadForm({ onUpload, mangaList, onDelete }) {
         </button>
       </form>
 
-      {/* --- アップロード済み作品リスト --- */}
+      {/* --- アップロード済み作品リスト (変更点) --- */}
       <div className="mt-12 border-t pt-8">
         <h3 className="text-xl font-bold mb-4 text-center">
           アップロード済み作品リスト
@@ -518,55 +597,17 @@ function UploadForm({ onUpload, mangaList, onDelete }) {
             </p>
           ) : (
             mangaList.map((manga) => (
-              <div
-                key={manga.id}
-                className="flex flex-col items-center bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200"
-              >
-                {/* 1. 題名 */}
-                <h4 className="text-lg font-bold text-blue-700 mb-1 text-center">
-                  {manga.title}
-                </h4>
-
-                {/* 2. ペンネーム */}
-                <p className="text-sm text-gray-600 mb-3 text-center">
-                  作者: {manga.author}
-                </p>
-
-                {/* 3. 削除ボタン */}
-                <div className="mb-3">
-                  <button
-                    onClick={() => setShowDeleteModal(manga.id)}
-                    className="flex items-center px-3 py-1 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors border border-red-200"
-                    title="削除"
-                  >
-                    <Trash2 className="w-4 h-4 mr-1" />
-                    削除
-                  </button>
-                </div>
-
-                {/* 4. 画像 */}
-                <div className="flex justify-center w-full">
-                  <img
-                    src={manga.imageUrl}
-                    alt={manga.title}
-                    className="h-auto object-cover rounded-md shadow-sm"
-                    style={{ maxWidth: "80px" }}
-                  />
-                </div>
-              </div>
+              <UploadListItem 
+                key={manga.id} 
+                manga={manga} 
+                onDelete={onDelete} 
+              />
             ))
           )}
         </div>
       </div>
-
-      {/* 削除モーダル */}
-      {showDeleteModal && (
-        <DeleteModal
-          mangaId={showDeleteModal}
-          onClose={() => setShowDeleteModal(null)}
-          onDelete={onDelete}
-        />
-      )}
+      
+      {/* 削除モーダル呼び出しは不要になったため削除 */}
     </div>
   );
 }
@@ -865,7 +906,7 @@ function RankingView({ mangaList, onDelete }) {
   );
 }
 
-// --- 削除モーダル (変更なし) ---
+// --- 削除モーダル (RankingViewで使用) ---
 function DeleteModal({ mangaId, onClose, onDelete }) {
   const [password, setPassword] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
